@@ -7,6 +7,8 @@ from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import load_model
 
+import keras_metrics
+
 import numpy as np
 
 
@@ -15,8 +17,9 @@ IMAGE_HEIGHT = 128
 IMAGE_WIDTH = 128
 BATCH_SIZE = 32
 VALIDATION_SPLIT = 0.2
-EPOCHS = 2
-STEPS_PER_EPOCH = 3
+TEST_SPLIT = 0.2
+EPOCHS = 5
+STEPS_PER_EPOCH = 300
 VALIDATION_STEPS = 32
 
 
@@ -26,12 +29,12 @@ class SlideClassification():
 	def generate(self):
 		#Labelled dataset creation
 		self.train_datagen = ImageDataGenerator(rescale = 1./255, shear_range = 0.2, zoom_range = 0.2, 
-			horizontal_flip = True, validation_split=VALIDATION_SPLIT)
+			horizontal_flip = True,  validation_split=VALIDATION_SPLIT)
 		self.test_datagen = ImageDataGenerator(rescale = 1./255)
 		self.training_set = self.train_datagen.flow_from_directory(DATASET_DIR, 
 			target_size = (IMAGE_HEIGHT, IMAGE_WIDTH), 
-			batch_size = BATCH_SIZE, class_mode = 'binary', subset='training')
-		self.validation_generator = self.train_datagen.flow_from_directory(DATASET_DIR, 
+			batch_size = BATCH_SIZE,  class_mode = 'binary', subset='training')
+		self.validation_generator = self.test_datagen.flow_from_directory(DATASET_DIR, 
 			target_size=(IMAGE_HEIGHT, IMAGE_WIDTH), batch_size=BATCH_SIZE,
 			class_mode='binary', subset='validation')
 
@@ -58,9 +61,14 @@ class SlideClassification():
 		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', 
 			metrics = ['accuracy'])
 
+		STEP_SIZE_TRAIN=len(self.training_set)/BATCH_SIZE #train_generator.batch_size
+		STEP_SIZE_VALID=self.validation_generator.n #valid_generator.batch_size
+
 		self.classifier.fit_generator(self.remove_truncated_image(self.training_set),
-		 steps_per_epoch = STEPS_PER_EPOCH, validation_data = self.validation_generator, 
-		 validation_steps = VALIDATION_STEPS, epochs = EPOCHS)
+		 steps_per_epoch = STEP_SIZE_TRAIN, validation_data = self.validation_generator, 
+		 epochs = EPOCHS)
+
+		self.classifier.evaluate_generator(generator=test_datagen)
 
 		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEPS_PER_EPOCH)+".h5")
 
@@ -96,6 +104,6 @@ class SlideClassification():
 classification = SlideClassification()
 classification.generate()
 classification.train()
-model = classification.load("model_e1_spe_3.h5")
-prediction = classification.inference('single_inference/test_single.jpg', model)
+#model = classification.load("model_e5_spe300.h5")
+#prediction = classification.inference('single_inference/test_single.jpg', model)
 print "Classified as: ", prediction
