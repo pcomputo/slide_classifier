@@ -58,11 +58,9 @@ class SlideClassification():
 		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', 
 			metrics = ['accuracy'])
 
-		print "hi"
 		self.classifier.fit_generator(self.remove_truncated_image(self.training_set),
 		 steps_per_epoch = STEPS_PER_EPOCH, validation_data = self.validation_generator, 
 		 validation_steps = VALIDATION_STEPS, epochs = EPOCHS)
-		print "hello"
 
 		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEPS_PER_EPOCH)+".h5")
 
