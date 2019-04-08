@@ -15,7 +15,7 @@ IMAGE_HEIGHT = 128
 IMAGE_WIDTH = 128
 BATCH_SIZE = 32
 VALIDATION_SPLIT = 0.2
-EPOCHS = 1
+EPOCHS = 2
 STEPS_PER_EPOCH = 3
 VALIDATION_STEPS = 32
 
@@ -36,6 +36,17 @@ class SlideClassification():
 			class_mode='binary', subset='validation')
 
 
+	def remove_truncated_image(self, gen):
+		#checks if image is corrupt or not
+		while True:
+			try:
+				features, label = next(gen)
+				yield features, label
+			except:
+				pass
+            	#TODO write corrupted images to txt
+
+
 	def train(self):
 		#classifier architecture
 		self.classifier = Sequential()
@@ -44,12 +55,14 @@ class SlideClassification():
 		self.classifier.add(MaxPooling2D(pool_size = (2, 2)))
 		self.classifier.add(Flatten())
 		self.classifier.add(Dense(units = 1, activation = 'sigmoid'))
-		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', 
+			metrics = ['accuracy'])
 
-
-		self.classifier.fit_generator(self.training_set, steps_per_epoch = STEPS_PER_EPOCH, 
-			validation_data = self.validation_generator, validation_steps = VALIDATION_STEPS, 
-			epochs = EPOCHS)
+		print "hi"
+		self.classifier.fit_generator(self.remove_truncated_image(self.training_set),
+		 steps_per_epoch = STEPS_PER_EPOCH, validation_data = self.validation_generator, 
+		 validation_steps = VALIDATION_STEPS, epochs = EPOCHS)
+		print "hello"
 
 		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe_"+str(STEPS_PER_EPOCH)+".h5")
 
