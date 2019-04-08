@@ -5,6 +5,7 @@ from keras.layers import Flatten
 from keras.layers import Dense
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
+from keras.models import load_model
 
 import numpy as np
 
@@ -41,3 +42,7 @@ classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = [
 classifier.fit_generator(training_set, steps_per_epoch = 300, 
 	validation_data = validation_generator, validation_steps = 32, 
 	epochs = EPOCHS)
+
+classifier.save('model_5e.h5')
+
+model = load_model('model_5e.h5')
