@@ -20,7 +20,7 @@ VALIDATION_SPLIT = 0.2
 TEST_SPLIT = 0.2
 EPOCHS = 5
 STEPS_PER_EPOCH = 300
-VALIDATION_STEPS = 32
+#VALIDATION_STEPS = 32
 
 
 class SlideClassification():
@@ -30,11 +30,11 @@ class SlideClassification():
 		#Labelled dataset creation
 		self.train_datagen = ImageDataGenerator(rescale = 1./255, shear_range = 0.2, zoom_range = 0.2, 
 			horizontal_flip = True,  validation_split=VALIDATION_SPLIT)
-		self.test_datagen = ImageDataGenerator(rescale = 1./255)
+		#self.test_datagen = ImageDataGenerator(rescale = 1./255)
 		self.training_set = self.train_datagen.flow_from_directory(DATASET_DIR, 
 			target_size = (IMAGE_HEIGHT, IMAGE_WIDTH), 
 			batch_size = BATCH_SIZE,  class_mode = 'binary', subset='training')
-		self.validation_generator = self.test_datagen.flow_from_directory(DATASET_DIR, 
+		self.validation_generator = self.train_datagen.flow_from_directory(DATASET_DIR, 
 			target_size=(IMAGE_HEIGHT, IMAGE_WIDTH), batch_size=BATCH_SIZE,
 			class_mode='binary', subset='validation')
 
@@ -61,14 +61,14 @@ class SlideClassification():
 		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', 
 			metrics = ['accuracy'])
 
-		STEP_SIZE_TRAIN=len(self.training_set)/BATCH_SIZE #train_generator.batch_size
+		STEP_SIZE_TRAIN=self.training_set.n #train_generator.batch_size
 		STEP_SIZE_VALID=self.validation_generator.n #valid_generator.batch_size
 
 		self.classifier.fit_generator(self.remove_truncated_image(self.training_set),
 		 steps_per_epoch = STEP_SIZE_TRAIN, validation_data = self.validation_generator, 
-		 epochs = EPOCHS)
+		 validation_steps = STEP_SIZE_VALID, epochs = EPOCHS)
 
-		self.classifier.evaluate_generator(generator=test_datagen)
+		self.classifier.evaluate_generator(generator=self.train_datagen)
 
 		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEPS_PER_EPOCH)+".h5")
 
