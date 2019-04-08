@@ -64,7 +64,7 @@ class SlideClassification():
 		 validation_steps = VALIDATION_STEPS, epochs = EPOCHS)
 		print "hello"
 
-		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe_"+str(STEPS_PER_EPOCH)+".h5")
+		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEPS_PER_EPOCH)+".h5")
 
 
 	def save(self, classifier, model):
@@ -78,6 +78,26 @@ class SlideClassification():
 		return model
 
 
+	def inference(self, test_image, model):
+		#Infer on input image, for now takes one image
+		test_image = image.load_img(test_image, 
+			target_size = (IMAGE_HEIGHT, IMAGE_WIDTH))
+		test_image = image.img_to_array(test_image)
+		test_image = np.expand_dims(test_image, axis = 0)
+		result = model.predict(test_image)
+		self.training_set.class_indices
+		if result[0][0] == 1:
+			prediction = 'Presentation'
+		else:
+			prediction = 'Not Presentation'
+
+		return prediction
+
+
+
 classification = SlideClassification()
 classification.generate()
 classification.train()
+model = classification.load("model_e1_spe_3.h5")
+prediction = classification.inference('single_inference/test_single.jpg', model)
+print "Classified as: ", prediction
