@@ -8,8 +8,11 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.models import load_model
 
 import keras_metrics
+from sklearn import metrics
 
+import sys
 import numpy as np
+np.set_printoptions(threshold=sys.maxsize)
 
 
 DATASET_DIR = 'image_classifier'
@@ -35,8 +38,8 @@ class SlideClassification():
 			target_size = (IMAGE_HEIGHT, IMAGE_WIDTH), 
 			batch_size = BATCH_SIZE,  class_mode = 'binary', subset='training')
 		self.validation_generator = self.train_datagen.flow_from_directory(DATASET_DIR, 
-			target_size=(IMAGE_HEIGHT, IMAGE_WIDTH), batch_size=BATCH_SIZE,
-			class_mode='binary', subset='validation')
+			target_size=(IMAGE_HEIGHT, IMAGE_WIDTH), batch_size=1,
+			class_mode='binary', subset='validation', shuffle=False)
 
 
 	def remove_truncated_image(self, gen):
@@ -61,16 +64,36 @@ class SlideClassification():
 		self.classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', 
 			metrics = ['accuracy'])
 
-		STEP_SIZE_TRAIN=self.training_set.n #train_generator.batch_size
-		STEP_SIZE_VALID=self.validation_generator.n #valid_generator.batch_size
+		STEP_SIZE_TRAIN=self.training_set.n/BATCH_SIZE #train_generator.batch_size
+		STEP_SIZE_VALID=self.validation_generator.n/BATCH_SIZE #valid_generator.batch_size
+		print STEP_SIZE_VALID
 
 		self.classifier.fit_generator(self.remove_truncated_image(self.training_set),
 		 steps_per_epoch = STEP_SIZE_TRAIN, validation_data = self.validation_generator, 
 		 validation_steps = STEP_SIZE_VALID, epochs = EPOCHS)
 
-		self.classifier.evaluate_generator(generator=self.train_datagen)
+		#self.classifier.evaluate_generator(generator=self.train_datagen)
 
-		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEPS_PER_EPOCH)+".h5")
+		self.save(self.classifier, "model_e"+str(EPOCHS)+"_spe"+str(STEP_SIZE_TRAIN)+".h5")
+
+
+	def evaluate_metrics(self, model):
+		#self.validation_generator.reset()
+		#print model.evaluate_generator(generator=self.validation_generator, steps=1, verbose = 1)
+		#print model.metrics_names
+		STEP_SIZE_VALID=self.validation_generator.n/1
+		predictions = model.predict_generator(self.validation_generator, 
+			steps=STEP_SIZE_VALID, verbose = 1)
+		#print type(predictions)
+		#print predictions.shape
+		val_preds = np.where(predictions>0.5,1,0).flatten()
+		#print val_preds.shape
+		val_trues = self.validation_generator.classes
+		labels = self.validation_generator.class_indices.keys()
+		precisions, recall, f1_score, _ = metrics.precision_recall_fscore_support(val_trues, 
+			val_preds)
+
+		return precisions, recall, f1_score
 
 
 	def save(self, classifier, model):
@@ -103,7 +126,9 @@ class SlideClassification():
 
 classification = SlideClassification()
 classification.generate()
-classification.train()
-#model = classification.load("model_e5_spe300.h5")
+#classification.train()
+model = classification.load("model_e5_spe233.h5")
+precision, recall, f1 = classification.evaluate_metrics(model)
+print precision, recall, f1
 #prediction = classification.inference('single_inference/test_single.jpg', model)
-print "Classified as: ", prediction
+#print "Classified as: ", prediction
