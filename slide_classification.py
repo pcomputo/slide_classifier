@@ -90,10 +90,10 @@ class SlideClassification():
 		#print val_preds.shape
 		val_trues = self.validation_generator.classes
 		labels = self.validation_generator.class_indices.keys()
-		precisions, recall, f1_score, _ = metrics.precision_recall_fscore_support(val_trues, 
+		precisions, recall, f1_score, support = metrics.precision_recall_fscore_support(val_trues, 
 			val_preds)
 
-		return precisions, recall, f1_score
+		return precisions, recall, f1_score, support
 
 
 	def save(self, classifier, model):
@@ -126,9 +126,9 @@ class SlideClassification():
 
 classification = SlideClassification()
 classification.generate()
-#classification.train()
+classification.train()
 model = classification.load("model_e5_spe233.h5")
-precision, recall, f1 = classification.evaluate_metrics(model)
-print precision, recall, f1
-#prediction = classification.inference('single_inference/test_single.jpg', model)
-#print "Classified as: ", prediction
+precision, recall, f1, support = classification.evaluate_metrics(model)
+print precision, recall, f1, support
+prediction = classification.inference('single_inference/test_single.jpg', model)
+print "Classified as: ", prediction
